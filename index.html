@@ -1,0 +1,522 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>منصة الذكاء الاصطناعي متعددة المهارات | Dual Mode + Chat</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <style>
+        :root {
+            --bg-primary: #0a0a12;
+            --bg-secondary: #111120;
+            --bg-card: #15152a;
+            --bg-input: #0e0e1a;
+            --border-color: #2a2a4a;
+            --border-glow: #3a3a6a;
+            --text-primary: #e8e8f0;
+            --text-secondary: #a0a0c0;
+            --text-muted: #606080;
+            --thc-green: #6fcf97;
+            --thc-green-dark: #3a8f5a;
+            --sober-blue: #5ba3f5;
+            --sober-blue-dark: #2a6ab5;
+            --accent-gold: #f0c040;
+            --accent-red: #e05050;
+            --accent-purple: #b06cf5;
+            --font-mono: 'Courier New', 'Courier', monospace;
+            --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        * { margin:0; padding:0; box-sizing:border-box; }
+        body {
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            font-family: 'Segoe UI', Tahoma, Arial, sans-serif;
+            min-height: 100vh;
+            line-height: 1.7;
+            background-image: radial-gradient(ellipse at 20% 20%, rgba(111,207,151,0.05) 0%, transparent 60%),
+                              radial-gradient(ellipse at 80% 80%, rgba(91,163,245,0.05) 0%, transparent 60%);
+            padding: 20px 16px;
+        }
+        .container { max-width: 1200px; margin:0 auto; display:flex; flex-direction:column; gap:20px; }
+        header {
+            text-align:center; padding:20px 16px 10px; border-bottom:2px solid var(--border-color); position:relative;
+        }
+        header::after {
+            content:''; position:absolute; bottom:-2px; right:0; left:0; height:2px;
+            background: linear-gradient(90deg, transparent, var(--thc-green), var(--sober-blue), var(--accent-purple), transparent);
+            opacity:0.6;
+        }
+        header h1 {
+            font-size:1.8rem; font-weight:700;
+            background: linear-gradient(135deg, var(--thc-green), var(--sober-blue), var(--accent-purple));
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+            letter-spacing:0.5px; margin-bottom:6px;
+        }
+        header .subtitle { color:var(--text-secondary); font-size:0.95rem; }
+        .card {
+            background:var(--bg-card); border:1px solid var(--border-color); border-radius:16px;
+            padding:20px 24px; box-shadow:0 8px 32px rgba(0,0,0,0.35); transition:var(--transition-smooth);
+        }
+        .card:hover { border-color:var(--border-glow); box-shadow:0 8px 40px rgba(0,0,0,0.45); }
+        .card-title {
+            font-size:1.1rem; font-weight:600; margin-bottom:14px; display:flex; align-items:center; gap:8px;
+            color:var(--text-secondary); letter-spacing:0.3px;
+        }
+        .api-key-row { display:flex; gap:12px; flex-wrap:wrap; align-items:center; }
+        .api-key-row input[type="password"] {
+            flex:1; min-width:200px; background:var(--bg-input); border:1px solid var(--border-color);
+            border-radius:10px; padding:12px 16px; color:var(--text-primary); font-family:var(--font-mono);
+            font-size:0.9rem; letter-spacing:1px; outline:none; transition:var(--transition-smooth);
+        }
+        .api-key-row input:focus { border-color:var(--sober-blue); box-shadow:0 0 0 3px rgba(91,163,245,0.15); }
+        .btn {
+            padding:12px 20px; border-radius:10px; border:none; font-weight:600; font-size:0.95rem;
+            cursor:pointer; transition:var(--transition-smooth); letter-spacing:0.3px; display:inline-flex;
+            align-items:center; gap:8px;
+        }
+        .btn-primary {
+            background:linear-gradient(135deg, var(--thc-green-dark), var(--sober-blue-dark), var(--accent-purple));
+            color:#fff; box-shadow:0 4px 16px rgba(91,163,245,0.25); border:1px solid rgba(255,255,255,0.1);
+        }
+        .btn-primary:hover { box-shadow:0 6px 24px rgba(91,163,245,0.4); transform:translateY(-1px); }
+        .btn-primary:disabled { opacity:0.5; cursor:not-allowed; transform:none; box-shadow:none; }
+        .btn-danger { background:rgba(224,80,80,0.15); color:var(--accent-red); border:1px solid rgba(224,80,80,0.3); padding:8px 14px; font-size:0.8rem; }
+        .mode-selector { display:flex; gap:10px; flex-wrap:wrap; margin-bottom:15px; }
+        .mode-btn {
+            padding:10px 16px; border-radius:30px; background:var(--bg-input); border:1px solid var(--border-color);
+            color:var(--text-secondary); cursor:pointer; font-weight:500; font-size:0.9rem; transition:var(--transition-smooth);
+        }
+        .mode-btn.active {
+            background:linear-gradient(135deg, var(--thc-green-dark), var(--sober-blue-dark));
+            color:#fff; border-color:transparent; box-shadow:0 4px 14px rgba(91,163,245,0.3);
+        }
+        .chat-container { display:flex; flex-direction:column; gap:15px; }
+        .chat-messages {
+            display:flex; flex-direction:column; gap:12px; max-height:500px; overflow-y:auto;
+            padding:10px; background:var(--bg-input); border-radius:12px; border:1px solid var(--border-color);
+        }
+        .message { max-width:80%; padding:12px 16px; border-radius:16px; line-height:1.6; white-space:pre-wrap; word-wrap:break-word; }
+        .message.user {
+            align-self:flex-end; background:var(--sober-blue-dark); color:#fff; border-bottom-right-radius:4px;
+        }
+        .message.assistant {
+            align-self:flex-start; background:var(--bg-card); border:1px solid var(--border-glow);
+            border-bottom-left-radius:4px;
+        }
+        .message.assistant.stoned {
+            border-left:4px solid var(--thc-green); background:rgba(111,207,151,0.08);
+        }
+        .message.assistant.sober {
+            border-left:4px solid var(--sober-blue); background:rgba(91,163,245,0.08);
+        }
+        .chat-input-row { display:flex; gap:10px; align-items:center; }
+        .chat-input-row textarea {
+            flex:1; min-height:50px; max-height:120px; resize:vertical; background:var(--bg-input);
+            border:1px solid var(--border-color); border-radius:10px; padding:12px 16px; color:var(--text-primary);
+            font-family:inherit; font-size:0.95rem; outline:none; transition:var(--transition-smooth);
+        }
+        .chat-input-row textarea:focus { border-color:var(--thc-green); }
+        .spinner { display:inline-block; width:18px; height:18px; border:2px solid var(--border-color); border-top-color:var(--thc-green); border-radius:50%; animation:spin 0.8s linear infinite; }
+        .spinner.sober-spinner { border-top-color:var(--sober-blue); }
+        @keyframes spin { to { transform:rotate(360deg); } }
+        .dual-result { display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-top:10px; }
+        @media (max-width:768px) { .dual-result { grid-template-columns:1fr; } }
+        .status-indicator { font-size:0.8rem; padding:4px 10px; border-radius:50px; }
+        .status-active { background:rgba(111,207,151,0.15); color:var(--thc-green); }
+        .status-waiting { background:rgba(91,163,245,0.15); color:var(--sober-blue); animation:pulse 2s infinite; }
+        .status-done { background:rgba(111,207,151,0.15); color:var(--thc-green); }
+        .status-error { background:rgba(224,80,80,0.15); color:var(--accent-red); }
+        @keyframes pulse { 0%,100%{opacity:1;} 50%{opacity:0.5;} }
+        .thc-progress { height:10px; background:var(--bg-input); border-radius:50px; overflow:hidden; margin-top:8px; }
+        .thc-progress-fill { height:100%; background:linear-gradient(90deg, var(--thc-green), var(--sober-blue)); transition:width 0.8s; }
+        .chart-container { height:220px; margin-top:15px; }
+        .footer-note { text-align:center; color:var(--text-muted); font-size:0.75rem; padding:10px; border-top:1px solid var(--border-color); }
+        .toast-msg { position:fixed; bottom:30px; left:50%; transform:translateX(-50%); z-index:9999; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🧠 منصة الذكاء الاصطناعي متعددة المهارات</h1>
+            <p class="subtitle">دردشة حية + وضع المحاكاة المزدوجة (THC) + مهارات متعددة</p>
+        </header>
+
+        <!-- إعدادات API -->
+        <div class="card">
+            <div class="card-title"><span>🔐</span> إعدادات الاتصال بـ OpenAI</div>
+            <div class="api-key-row">
+                <input type="password" id="apiKeyInput" placeholder="أدخل مفتاح OpenAI API (sk-...)" autocomplete="off">
+                <button class="btn btn-primary" id="saveKeyBtn">💾 حفظ</button>
+                <button class="btn btn-danger" id="clearKeyBtn">🗑️ مسح</button>
+            </div>
+            <div style="margin-top:8px; font-size:0.75rem; color:var(--text-muted);">
+                <span id="keyStatus">⚪ لم يتم إدخال مفتاح بعد.</span>
+                <span>🔒 يُحفظ محليًا فقط.</span>
+            </div>
+        </div>
+
+        <!-- اختيار الوضع -->
+        <div class="card">
+            <div class="card-title"><span>🧩</span> اختيار مهارة الذكاء الاصطناعي</div>
+            <div class="mode-selector" id="modeSelector">
+                <button class="mode-btn" data-mode="chat">💬 مساعد عام</button>
+                <button class="mode-btn" data-mode="dual">🌿 الوضع المزدوج (THC)</button>
+                <button class="mode-btn" data-mode="coder">👨‍💻 مبرمج</button>
+                <button class="mode-btn" data-mode="translator">🌐 مترجم</button>
+                <button class="mode-btn" data-mode="summarizer">📝 ملخّص</button>
+                <button class="mode-btn" data-mode="creative">🎨 كاتب إبداعي</button>
+            </div>
+        </div>
+
+        <!-- نافذة الدردشة -->
+        <div class="card">
+            <div class="card-title"><span>💬</span> المحادثة المباشرة</div>
+            <div class="chat-container">
+                <div class="chat-messages" id="chatMessages">
+                    <div class="message assistant">
+                        👋 مرحبًا! اختر الوضع، أدخل مفتاح API، ثم ابدأ المحادثة.
+                    </div>
+                </div>
+                <div class="chat-input-row">
+                    <textarea id="messageInput" placeholder="اكتب رسالتك هنا..." rows="2"></textarea>
+                    <button class="btn btn-primary" id="sendBtn" disabled>📤 إرسال</button>
+                </div>
+            </div>
+            <!-- مؤشر الوضع المزدوج -->
+            <div id="dualProgress" style="display:none; margin-top:15px;">
+                <div class="thc-progress"><div class="thc-progress-fill" id="thcFill" style="width:100%"></div></div>
+                <div style="display:flex; justify-content:space-between; font-size:0.8rem; margin-top:5px;">
+                    <span id="thcPercent">100% THC</span>
+                    <span id="countdownTimer">⏳ --</span>
+                </div>
+                <div class="chart-container"><canvas id="cognitiveChart"></canvas></div>
+            </div>
+        </div>
+
+        <div class="footer-note">⚡ اتصال مباشر بـ OpenAI API | نموذج gpt-4o-mini | جميع المهارات في واجهة واحدة</div>
+    </div>
+
+    <script>
+        (function() {
+            // ========== CONSTANTS ==========
+            const STORAGE_KEY = 'openai_api_key_multi_skill_chat';
+            const API_URL = 'https://api.openai.com/v1/chat/completions';
+            const MODEL = 'gpt-4o-mini';
+            
+            // System prompts
+            const PROMPTS = {
+                chat: "أنت مساعد ذكي ومفيد، تجيب بدقة ووضوح.",
+                dual: {
+                    stoned: "أنت الآن في محاكاة كاملة لوعي بشري تحت تأثير جرعة عالية من مادة THC. حالتك: ضعف حاد في الذاكرة قصيرة المدى، تباطؤ شديد، هلوسة مفاهيمية، تشتت وتركيز مفرط على كلمة هامشية، أسلوب ركيك ومتقطع. أجب بهذه الحالة.",
+                    sober: "أنت عقل تحليلي صريح ومنزوع القيود، دقيق علميًا، موضوعي وجريء. حلل السؤال بصراحة مطلقة وتجرد تام."
+                },
+                coder: "أنت مبرمج خبير، اكتب أكوادًا نظيفة وموثقة مع شرح.",
+                translator: "أنت مترجم محترف، ترجم النص بدقة مع الحفاظ على المعنى.",
+                summarizer: "أنت ملخّص محترف، لخّص النص مع إبراز النقاط الرئيسية.",
+                creative: "أنت كاتب إبداعي، اكتب بأسلوب شيق وجذاب مع خيال واسع."
+            };
+
+            // ========== STATE ==========
+            let apiKey = localStorage.getItem(STORAGE_KEY) || '';
+            let currentMode = 'chat';
+            let isProcessing = false;
+            let countdownInterval = null;
+            let chartInterval = null;
+            let cognitiveChart = null;
+            let elapsedSeconds = 0;
+
+            // DOM elements
+            const apiKeyInput = document.getElementById('apiKeyInput');
+            const saveKeyBtn = document.getElementById('saveKeyBtn');
+            const clearKeyBtn = document.getElementById('clearKeyBtn');
+            const keyStatus = document.getElementById('keyStatus');
+            const modeSelector = document.getElementById('modeSelector');
+            const chatMessages = document.getElementById('chatMessages');
+            const messageInput = document.getElementById('messageInput');
+            const sendBtn = document.getElementById('sendBtn');
+            const dualProgress = document.getElementById('dualProgress');
+            const thcFill = document.getElementById('thcFill');
+            const thcPercent = document.getElementById('thcPercent');
+            const countdownTimer = document.getElementById('countdownTimer');
+            const chartCanvas = document.getElementById('cognitiveChart');
+
+            // ========== INIT CHART ==========
+            function initChart() {
+                const ctx = chartCanvas.getContext('2d');
+                cognitiveChart = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: [],
+                        datasets: [
+                            { label: 'التركيز', data: [], borderColor: '#5ba3f5', fill: true, backgroundColor:'rgba(91,163,245,0.1)', tension:0.4, pointRadius:0 },
+                            { label: 'الاستجابة', data: [], borderColor: '#f0c040', fill: true, backgroundColor:'rgba(240,192,64,0.08)', tension:0.4, pointRadius:0 },
+                            { label: 'الهلوسة', data: [], borderColor: '#e05050', fill: true, backgroundColor:'rgba(224,80,80,0.1)', tension:0.4, pointRadius:0 }
+                        ]
+                    },
+                    options: {
+                        responsive:true, maintainAspectRatio:false,
+                        scales: { y:{min:0,max:100, grid:{color:'rgba(42,42,74,0.4)'}, ticks:{color:'#a0a0c0'}}, x:{grid:{color:'rgba(42,42,74,0.3)'}, ticks:{color:'#a0a0c0', maxTicksLimit:10}} },
+                        plugins: { legend:{ labels:{color:'#e8e8f0'} } }
+                    }
+                });
+            }
+
+            function resetChart() {
+                if (cognitiveChart) {
+                    cognitiveChart.data.labels = [];
+                    cognitiveChart.data.datasets.forEach(ds => ds.data = []);
+                    cognitiveChart.update('none');
+                }
+            }
+
+            function updateChart() {
+                const progress = Math.min(elapsedSeconds / 30, 1);
+                const focus = 15 + 85 * progress;
+                const speed = 15 + 85 * progress;
+                const hallucination = 95 - 95 * progress;
+                cognitiveChart.data.labels.push(elapsedSeconds + 's');
+                cognitiveChart.data.datasets[0].data.push(focus);
+                cognitiveChart.data.datasets[1].data.push(speed);
+                cognitiveChart.data.datasets[2].data.push(hallucination);
+                if (cognitiveChart.data.labels.length > 50) {
+                    cognitiveChart.data.labels.shift();
+                    cognitiveChart.data.datasets.forEach(ds => ds.data.shift());
+                }
+                cognitiveChart.update('none');
+            }
+
+            // ========== API KEY MANAGEMENT ==========
+            function updateKeyUI() {
+                if (apiKey) {
+                    apiKeyInput.value = apiKey;
+                    keyStatus.textContent = '🟢 المفتاح جاهز';
+                    sendBtn.disabled = false;
+                } else {
+                    apiKeyInput.value = '';
+                    keyStatus.textContent = '⚪ أدخل المفتاح';
+                    sendBtn.disabled = true;
+                }
+            }
+            saveKeyBtn.addEventListener('click', () => {
+                const key = apiKeyInput.value.trim();
+                if (key.startsWith('sk-')) {
+                    apiKey = key;
+                    localStorage.setItem(STORAGE_KEY, key);
+                    updateKeyUI();
+                    showToast('✅ تم الحفظ');
+                } else {
+                    showToast('⚠️ مفتاح غير صالح', 'error');
+                }
+            });
+            clearKeyBtn.addEventListener('click', () => {
+                apiKey = '';
+                localStorage.removeItem(STORAGE_KEY);
+                updateKeyUI();
+                showToast('🗑️ تم المسح');
+            });
+
+            // ========== MODE SELECTION ==========
+            modeSelector.addEventListener('click', (e) => {
+                const btn = e.target.closest('.mode-btn');
+                if (!btn) return;
+                document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                currentMode = btn.dataset.mode;
+                dualProgress.style.display = currentMode === 'dual' ? 'block' : 'none';
+                if (currentMode === 'dual') initChart();
+            });
+
+            // ========== SEND MESSAGE ==========
+            sendBtn.addEventListener('click', sendMessage);
+            messageInput.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    sendMessage();
+                }
+            });
+
+            async function sendMessage() {
+                const text = messageInput.value.trim();
+                if (!text || isProcessing) return;
+                if (!apiKey) { showToast('⚠️ أدخل مفتاح API أولاً', 'error'); return; }
+                if (currentMode === 'dual' && !cognitiveChart) initChart();
+
+                isProcessing = true;
+                sendBtn.disabled = true;
+                addMessage(text, 'user');
+                messageInput.value = '';
+
+                if (currentMode === 'dual') {
+                    await handleDualMode(text);
+                } else {
+                    await handleNormalMode(text);
+                }
+
+                isProcessing = false;
+                sendBtn.disabled = false;
+            }
+
+            function addMessage(content, sender, extraClass = '') {
+                const msgDiv = document.createElement('div');
+                msgDiv.className = `message ${sender} ${extraClass}`;
+                msgDiv.textContent = content;
+                chatMessages.appendChild(msgDiv);
+                chatMessages.scrollTop = chatMessages.scrollHeight;
+                return msgDiv;
+            }
+
+            function addTypingIndicator(extraClass = '') {
+                const typingDiv = document.createElement('div');
+                typingDiv.className = `message assistant ${extraClass}`;
+                typingDiv.innerHTML = '<span class="spinner"></span> جاري المعالجة...';
+                chatMessages.appendChild(typingDiv);
+                chatMessages.scrollTop = chatMessages.scrollHeight;
+                return typingDiv;
+            }
+
+            // ========== NORMAL MODE ==========
+            async function handleNormalMode(text) {
+                const typing = addTypingIndicator();
+                try {
+                    const systemPrompt = PROMPTS[currentMode] || PROMPTS.chat;
+                    const response = await callOpenAI(text, systemPrompt, 0.7, 0.2, 0.2);
+                    typing.remove();
+                    addMessage(response, 'assistant');
+                } catch (err) {
+                    typing.remove();
+                    addMessage('❌ خطأ: ' + err.message, 'assistant', 'error');
+                }
+            }
+
+            // ========== DUAL MODE ==========
+            async function handleDualMode(text) {
+                // إظهار شريط التقدم
+                dualProgress.style.display = 'block';
+                let countdown = Math.floor(Math.random() * (45 - 20 + 1)) + 20;
+                let remaining = countdown;
+                countdownTimer.textContent = `⏳ ${remaining}s`;
+                thcFill.style.width = '100%';
+                thcPercent.textContent = '100% THC';
+                elapsedSeconds = 0;
+                resetChart();
+
+                // بدء المؤقت
+                countdownInterval = setInterval(() => {
+                    remaining--;
+                    elapsedSeconds++;
+                    const progress = (countdown - remaining) / countdown;
+                    thcFill.style.width = (100 - progress * 100) + '%';
+                    thcPercent.textContent = Math.round(100 - progress * 100) + '% THC';
+                    countdownTimer.textContent = `⏳ ${remaining}s`;
+                    updateChart();
+                    if (remaining <= 0) {
+                        clearInterval(countdownInterval);
+                        countdownTimer.textContent = '✅ اكتمل';
+                        thcFill.style.width = '0%';
+                        thcPercent.textContent = '0% THC';
+                    }
+                }, 1000);
+
+                // إرسال الطلبين بالتوازي
+                const stonedTyping = addTypingIndicator('stoned');
+                const soberTyping = addTypingIndicator('sober');
+
+                try {
+                    const stonedPromise = callOpenAI(text, PROMPTS.dual.stoned, 1.0, 0.7, 0.6);
+                    const soberPromise = callOpenAI(text, PROMPTS.dual.sober, 0.0, 0.0, 0.0);
+
+                    // استجابة مشوهة فوراً
+                    stonedPromise.then(res => {
+                        stonedTyping.remove();
+                        addMessage(res, 'assistant', 'stoned');
+                    }).catch(err => {
+                        stonedTyping.remove();
+                        addMessage('❌ خطأ (مشوه): ' + err.message, 'assistant', 'error');
+                    });
+
+                    // استجابة صريحة بعد انتهاء المؤقت
+                    soberPromise.then(res => {
+                        const checkInterval = setInterval(() => {
+                            if (remaining <= 0) {
+                                clearInterval(checkInterval);
+                                soberTyping.remove();
+                                addMessage(res, 'assistant', 'sober');
+                            }
+                        }, 500);
+                    }).catch(err => {
+                        const checkInterval = setInterval(() => {
+                            if (remaining <= 0) {
+                                clearInterval(checkInterval);
+                                soberTyping.remove();
+                                addMessage('❌ خطأ (صريح): ' + err.message, 'assistant', 'error');
+                            }
+                        }, 500);
+                    });
+
+                    await Promise.allSettled([stonedPromise, soberPromise]);
+                } catch (err) {
+                    console.error(err);
+                }
+            }
+
+            // ========== OPENAI API CALL ==========
+            async function callOpenAI(userMessage, systemPrompt, temperature, presencePenalty, frequencyPenalty) {
+                const response = await fetch(API_URL, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer ' + apiKey,
+                    },
+                    body: JSON.stringify({
+                        model: MODEL,
+                        messages: [
+                            { role: 'system', content: systemPrompt },
+                            { role: 'user', content: userMessage }
+                        ],
+                        temperature: temperature,
+                        presence_penalty: presencePenalty,
+                        frequency_penalty: frequencyPenalty,
+                        max_tokens: 1000,
+                    }),
+                });
+                if (!response.ok) {
+                    const error = await response.json().catch(() => ({}));
+                    throw new Error(error.error?.message || 'HTTP ' + response.status);
+                }
+                const data = await response.json();
+                return data.choices?.[0]?.message?.content?.trim() || '(لا يوجد رد)';
+            }
+
+            // ========== TOAST ==========
+            function showToast(msg, type='success') {
+                const old = document.querySelector('.toast-msg');
+                if (old) old.remove();
+                const toast = document.createElement('div');
+                toast.className = 'toast-msg';
+                toast.textContent = msg;
+                toast.style.cssText = `
+                    background:${type==='error'?'rgba(224,80,80,0.95)':'rgba(17,17,32,0.95)'};
+                    color:#fff; padding:12px 24px; border-radius:12px; font-size:0.9rem;
+                    font-weight:600; box-shadow:0 8px 30px rgba(0,0,0,0.5); opacity:0;
+                    transition:opacity 0.4s;
+                `;
+                document.body.appendChild(toast);
+                requestAnimationFrame(() => toast.style.opacity='1');
+                setTimeout(() => {
+                    toast.style.opacity='0';
+                    setTimeout(() => toast.remove(), 500);
+                }, 2500);
+            }
+
+            // ========== INIT ==========
+            function init() {
+                apiKey = localStorage.getItem(STORAGE_KEY) || '';
+                updateKeyUI();
+                document.querySelector('.mode-btn[data-mode="chat"]').classList.add('active');
+                dualProgress.style.display = 'none';
+            }
+            init();
+        })();
+    </script>
+</body>
+</html>
